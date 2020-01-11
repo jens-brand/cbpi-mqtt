@@ -7,7 +7,12 @@ import json
 import os, re, threading, time
 from modules.core.props import Property
 
+from datetime import datetime, timedelta
+
+cbpi.MQTTActor_Compressors = []
+
 q = Queue()
+
 
 def on_connect(client, userdata, flags, rc):
     print("MQTT Connected" + str(rc))
@@ -58,6 +63,38 @@ class ESPEasyMQTT(ActorBase):
     def off(self):
         self.api.cache["mqtt"].client.publish(self.topic, payload=0, qos=2, retain=True)
 
+@cbpi.actor
+class MQTTActor_Compressor(ActorBase):
+    topic = Property.Text("Topic", configurable=True, default_value="", description="MQTT TOPIC")
+    delay = Property.Number("Compressor Delay", configurable=True, default_value=10, description="minutes")
+    on_payload = Property.Text("On Payload", configurable=True, default_value='{"state": "on"}', description="Payload to send to turn the actor on")
+    off_payload = Property.Text("Off Payload", configurable=True, default_value='{"state": "off"}', description="Payload to send to turn the actor off")
+
+    compressor_on = False
+    compressor_wait = datetime.utcnow()
+    delayed = False
+
+    def init(self):
+        super(MQTTActor_Compressor, self).init()
+        cbpi.MQTTActor_Compressors += [self]
+
+    def on(self, power=100):
+        if datetime.utcnow() >= self.compressor_wait:
+            self.compressor_on = True
+            self.api.cache["mqtt"].client.publish(self.topic, payload=json.dumps(self.on_payload), qos=2, retain=True)
+            self.delayed = False
+        else:
+            print "Delaying Turing on Compressor"
+            cbpi.app.logger.info("Delaying Turing on Compressor")
+            self.delayed = True
+
+    def off(self):
+        if self.compressor_on:
+            self.compressor_on = False
+            self.compressor_wait = datetime.utcnow() + timedelta(minutes=int(self.delay))
+        self.delayed = False
+        self.api.cache["mqtt"].client.publish(self.topic, payload=json.dumps(self.off_payload), qos=2, retain=True)
+		
 @cbpi.sensor
 class MQTT_SENSOR(SensorActive):
     a_topic = Property.Text("Topic", configurable=True, default_value="", description="MQTT TOPIC")
@@ -154,4 +191,8 @@ def initMQTT(app):
 
     cbpi.socketio.start_background_task(target=mqtt_reader, api=app)
 
-
+@cbpi.backgroundtask(key="update_MQTTActor_compressors", interval=5)
+def update_MQTTActor_compressors(api):
+    for compressor in cbpi.MQTTActor_Compressors:
+        if compressor.delayed and datetime.utcnow() >= compressor.compressor_wait:
+            compressor.on()
