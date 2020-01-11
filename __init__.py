@@ -39,15 +39,19 @@ class MQTTThread (threading.Thread):
 @cbpi.actor
 class MQTTActor(ActorBase):
     topic = Property.Text("Topic", configurable=True, default_value="", description="MQTT TOPIC")
+    on_payload = Property.Text("On Payload", configurable=True, default_value='{"state": "on"}', description="Payload to send to turn the actor on")
+    off_payload = Property.Text("Off Payload", configurable=True, default_value='{"state": "off"}', description="Payload to send to turn the actor off")
+
     def on(self, power=100):
-        self.api.cache["mqtt"].client.publish(self.topic, payload=json.dumps({"state": "on"}), qos=2, retain=True)
+        self.api.cache["mqtt"].client.publish(self.topic, payload=json.dumps(self.on_payload), qos=2, retain=True)
 
     def off(self):
-        self.api.cache["mqtt"].client.publish(self.topic, payload=json.dumps({"state": "off"}), qos=2, retain=True)
+        self.api.cache["mqtt"].client.publish(self.topic, payload=json.dumps(self.off_payload), qos=2, retain=True)
 
 @cbpi.actor
 class ESPEasyMQTT(ActorBase):
     topic = Property.Text("Topic", configurable=True, default_value="", description="MQTT TOPIC")
+
     def on(self, power=100):
         self.api.cache["mqtt"].client.publish(self.topic, payload=1, qos=2, retain=True)
 
@@ -57,7 +61,7 @@ class ESPEasyMQTT(ActorBase):
 @cbpi.sensor
 class MQTT_SENSOR(SensorActive):
     a_topic = Property.Text("Topic", configurable=True, default_value="", description="MQTT TOPIC")
-    b_payload = Property.Text("Payload Dictioanry", configurable=True, default_value="", description="Where to find msg in patload, leave blank for raw payload")
+    b_payload = Property.Text("Payload Dictioanry", configurable=True, default_value="", description="Where to find msg in payload, leave blank for raw payload")
     c_unit = Property.Text("Unit", configurable=True, default_value="", description="Units to display")
 
     last_value = None
