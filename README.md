@@ -1,7 +1,9 @@
-# MQTT Plugin for CraftBeerPi 3.0
+# Advanced MQTT Plugin for CraftBeerPi 3.0
 
 This plugins allows to connect to an MQTT Message broker to receive sensor data and invoke actors.
 
+In the advanced version the payload which is sent to the actors can be configured as property. 
+Furthermore there is an additional actor named MQTTActor_Compressor which can be used to control refrigerators with compressors. You can define a compressor delay which is just a safeguard to ensure the compressor does not cycle on and off too quickly.
 
 
 ## Installation
