@@ -48,10 +48,10 @@ class MQTTActor(ActorBase):
     off_payload = Property.Text("Off Payload", configurable=True, default_value='{"state": "off"}', description="Payload to send to turn the actor off")
 
     def on(self, power=100):
-        self.api.cache["mqtt"].client.publish(self.topic, payload=json.dumps(self.on_payload), qos=2, retain=True)
+        self.api.cache["mqtt"].client.publish(self.topic, payload=self.on_payload, qos=2, retain=True)
 
     def off(self):
-        self.api.cache["mqtt"].client.publish(self.topic, payload=json.dumps(self.off_payload), qos=2, retain=True)
+        self.api.cache["mqtt"].client.publish(self.topic, payload=self.off_payload, qos=2, retain=True)
 
 @cbpi.actor
 class ESPEasyMQTT(ActorBase):
@@ -81,7 +81,7 @@ class MQTTActor_Compressor(ActorBase):
     def on(self, power=100):
         if datetime.utcnow() >= self.compressor_wait:
             self.compressor_on = True
-            self.api.cache["mqtt"].client.publish(self.topic, payload=json.dumps(self.on_payload), qos=2, retain=True)
+            self.api.cache["mqtt"].client.publish(self.topic, payload=self.on_payload, qos=2, retain=True)
             self.delayed = False
         else:
             print "Delaying Turing on Compressor"
@@ -93,7 +93,7 @@ class MQTTActor_Compressor(ActorBase):
             self.compressor_on = False
             self.compressor_wait = datetime.utcnow() + timedelta(minutes=int(self.delay))
         self.delayed = False
-        self.api.cache["mqtt"].client.publish(self.topic, payload=json.dumps(self.off_payload), qos=2, retain=True)
+        self.api.cache["mqtt"].client.publish(self.topic, payload=self.off_payload, qos=2, retain=True)
 		
 @cbpi.sensor
 class MQTT_SENSOR(SensorActive):
